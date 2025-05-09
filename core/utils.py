@@ -5,6 +5,8 @@
 # @Author: Amundsen Severus Rubeus Bjaaland
 
 
+import random
+import hashlib
 from enum import Enum
 
 
@@ -24,6 +26,35 @@ class Position(object):
     
     def __repr__(self) -> str:
         return f"<Position x={self.__x} y={self.__y}>"
+    
+    def __hash__(self) -> int:
+        pos = f"{self.__x}, {self.__y}".encode("UTF-8")
+        
+        sha256 = hashlib.sha256()
+        sha256.update(pos)
+        
+        return int(sha256.hexdigest(), 16)
+    
+    def __eq__(self, other: "Position") -> bool:
+        if not isinstance(other, Position):
+            return False
+        return self.__hash__() == other.__hash__()
+    
+    def __add__(self, other: "Position") -> "Position":
+        if not isinstance(other, Position):
+            raise TypeError("Position 只能与 Position 相加")
+        return Position(self.__x + other.x, self.__y + other.y)
+    
+    def __sub__(self, other: "Position") -> "Position":
+        if not isinstance(other, Position):
+            raise TypeError("Position 只能与 Position 相减")
+        return Position(self.__x - other.x, self.__y - other.y)
+    
+    @staticmethod
+    def random(width: int, height: int) -> "Position":
+        random_x = random.randint(0, width - 1)
+        random_y = random.randint(0, height - 1)
+        return Position(random_x, random_y)
     
     def on_the_left_of(self, other: "Position") -> bool:
         """判断当前坐标是否在另一个坐标的左侧"""

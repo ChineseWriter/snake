@@ -43,15 +43,113 @@ class Snake(object):
     
     @property
     def body(self) -> Tuple[Position]:
-        return tuple(copy.deepcopy(self.__body))
+        buffer = []
+        for i in self.__body:
+            buffer.append(copy.deepcopy(i))
+        return tuple(buffer)
+    
+    @property
+    def head(self) -> Position:
+        return copy.deepcopy(self.__body[0])
+    
+    @property
+    def direction(self) -> Direction:
+        if self.__body[0].on_the_left_of(self.__body[1]):
+            return Direction.LEFT
+        elif self.__body[0].on_the_right_of(self.__body[1]):
+            return Direction.RIGHT
+        elif self.__body[0].on_the_top_of(self.__body[1]):
+            return Direction.UP
+        else:
+            return Direction.DOWN
     
     def die(self) -> None:
         self.__alive = False
+    
+    def head_next(self, direction: Direction) -> Position:
+        head = self.__body[0]
+        match direction:
+            case Direction.UP: return head.up
+            case Direction.DOWN: return head.down
+            case Direction.LEFT: return head.left
+            case Direction.RIGHT: return head.right
+    
+    def step(
+        self, direction: Direction | None, grow: bool = False
+    ) -> None:
+        if not self.__alive:
+            return
+        
+        if direction is None:
+            direction = self.direction
+        
+        # 移动蛇头
+        head = self.__body[0]
+        match direction:
+            case Direction.UP: new_head = head.up
+            case Direction.DOWN: new_head = head.down
+            case Direction.LEFT: new_head = head.left
+            case Direction.RIGHT: new_head = head.right
+        
+        match self.direction:
+            case Direction.UP:
+                if direction == Direction.DOWN:
+                    new_head = head.up
+            case Direction.DOWN:
+                if direction == Direction.UP:
+                    new_head = head.down
+            case Direction.LEFT:
+                if direction == Direction.RIGHT:
+                    new_head = head.left
+            case Direction.RIGHT:
+                if direction == Direction.LEFT:
+                    new_head = head.right
+        
+        # 更新蛇身
+        self.__body.insert(0, new_head)
+        if not grow: self.__body.pop()
 
 
 class Food(object):
-    pass
+    def __init__(self, init_pos: Position):
+        self.__position = init_pos
+    
+    def __hash__(self):
+        pos = str(self.__position.xy).encode("UTF-8")
+        
+        sha256 = hashlib.sha256()
+        sha256.update(pos)
+        
+        return int(sha256.hexdigest(), 16)
+    
+    def __eq__(self, other: "Food"):
+        if not isinstance(other, Food):
+            return False
+        return self.__hash__() == other.__hash__()
+    
+    def __repr__(self) -> str:
+        return f"<Food pos={self.__position.xy}>"
+    
+    @property
+    def pos(self) -> Position:
+        return copy.deepcopy(self.__position)
 
 
 class Field(object):
-    pass
+    def __init__(self, width: int, height: int):
+        self.__width = width
+        self.__height = height
+    
+    def __repr__(self) -> str:
+        return f"<Field width={self.__width} height={self.__height}>"
+    
+    @property
+    def width(self) -> int:
+        return self.__width
+    
+    @property
+    def height(self) -> int:
+        return self.__height
+    
+    def in_bounds(self, pos: Position) -> bool:
+        return 0 <= pos.x < self.__width and 0 <= pos.y < self.__height
